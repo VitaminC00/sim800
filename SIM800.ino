@@ -1,9 +1,11 @@
 #include "SIM800.h"
 
 SIM800::SIM800(HardwareSerial& serial, int resetPin) : serial(serial), resetPin(resetPin) {
-    pinMode(SIMCOM800_RESET_PIN, OUTPUT);
-    digitalWrite(SIMCOM800_RESET_PIN, HIGH);
-    delay(100);
+    if (resetPin != 0) {
+      pinMode(resetPin, OUTPUT);
+      digitalWrite(resetPin, HIGH);      
+      delay(100);
+    }
     serial.begin(SIM800_BAUDRATE);
     debug = false;
 }
@@ -71,15 +73,27 @@ void SIM800::wakeUp() {
 }
 
 void SIM800::powerOff() {
-  sendATCommand("AT+CPOWD=1");
+  sendATCommand("AT+CPOWD=1", 3000, "NORMAL POWER DOWN");
   if (resetPin != 0) {
-    digitalWrite(resetPin, HIGH);
+    digitalWrite(resetPin, LOW);
   }   
 }
 
 void SIM800::powerUp() {
   if (resetPin != 0) {
-   digitalWrite(resetPin, HIGH);
+    if (debug) { 
+      serialDebug.println("Powering up...");
+    }
+    // Trigger reset
+    digitalWrite(resetPin, HIGH);    
+    // Send some commands to wait for the module to be ready
+    while(sendATCommand("AT") == false) delay(1000);
+    while(sendATCommand("AT+CFUN?", "+CFUN: 1") == false) delay(2500); 
+    while(gsm->getSignalLevel() == 0) delay(2500);          
+    while(gsm->getOperatorName() == 0) delay(2500);
+    if (debug) { 
+      serialDebug.println("Module Ready");
+    }    
   }   
 }
 
@@ -87,6 +101,9 @@ const char* SIM800::getOperatorName() {
     sendATCommand("AT+COPS?");
     // Parse response
     char* p = strchr(resp_buff, '"');
+    if (p == 0) {
+      return 0;
+    }
     char aux[20] = {0};
     for(int i=0; p[i+1]!= '"'; i++) {
       aux[i]=p[i+1];
@@ -265,6 +282,7 @@ bool SIM800::sendATCommand(const char* command, int timeout, const char* expecte
     if (debug) {
       serialDebug.print("TIMEOUT:");
       serialDebug.println(command);
+      serialDebug.println(resp_buff);
     }
     return false;
 }
