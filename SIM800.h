@@ -1,6 +1,8 @@
 #ifndef SIM800_H
 #define SIM800_H
 
+#include <Arduino.h>
+
 #define CMD_BUFF_SIZE  100
 #define RESP_BUFF_SIZE  500
 #define SIM800_BAUDRATE 9600

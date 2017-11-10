@@ -89,8 +89,8 @@ void SIM800::powerUp() {
     // Send some commands to wait for the module to be ready
     while(sendATCommand("AT") == false) delay(1000);
     while(sendATCommand("AT+CFUN?", "+CFUN: 1") == false) delay(2500); 
-    while(gsm->getSignalLevel() == 0) delay(2500);          
-    while(gsm->getOperatorName() == 0) delay(2500);
+    while(getSignalLevel() == 0) delay(2500);          
+    while(getOperatorName() == 0) delay(2500);
     if (debug) { 
       serialDebug.println("Module Ready");
     }    
